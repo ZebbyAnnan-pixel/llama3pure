@@ -123,7 +123,9 @@ const testModelUsingNode = (model) => {
 const testPerformance = () => {
   const m0 = process.memoryUsage().rss
   const t0 = performance.now()
-  const modelPathPerf = path.resolve(__dirname, "gemma-3-1b-it-Q8_0.gguf")
+  const modelName = "gemma-3-1b-it-Q8_0.gguf"
+  const modelPathPerf = path.resolve(__dirname, modelName)
+  const fileSize = fs.statSync(modelPathPerf).size
 
   const buf = readFileAsArrayBuffer(modelPathPerf)
 
@@ -182,7 +184,12 @@ const testPerformance = () => {
   const MB = 1024 * 1024
 
   console.log(
-    "\nRead: " +
+    "\nModel: " +
+      modelName +
+      " | Size: " +
+      (fileSize / MB).toFixed(0) +
+      " MB\n" +
+      "Read: " +
       (t1 - t0).toFixed(0) +
       " ms | Load: " +
       (t2 - t1).toFixed(0) +
