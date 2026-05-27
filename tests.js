@@ -121,14 +121,17 @@ const testModelUsingNode = (model) => {
 }
 
 const testPerformance = () => {
+  const m0 = process.memoryUsage().rss
   const t0 = performance.now()
   const modelPathPerf = path.resolve(__dirname, "gemma-3-1b-it-Q8_0.gguf")
 
   const buf = readFileAsArrayBuffer(modelPathPerf)
 
   const t1 = performance.now()
+  const m1 = process.memoryUsage().rss
 
   let tokenCount = 0
+  let mPeak = Math.max(m0, m1)
 
   llama3pure({
     type: "load",
@@ -136,6 +139,10 @@ const testPerformance = () => {
     cbRender: (token) => {
       tokenCount++
       process.stdout.write(token)
+      const r = process.memoryUsage().rss
+      if (r > mPeak) {
+        mPeak = r
+      }
     },
     systemPrompt: "You are a helpful assistant.",
     maxTokens: 256,
@@ -146,6 +153,10 @@ const testPerformance = () => {
   })
 
   const t2 = performance.now()
+  const m2 = process.memoryUsage().rss
+  if (m2 > mPeak) {
+    mPeak = m2
+  }
 
   llama3pure({
     type: "generate",
@@ -161,8 +172,14 @@ const testPerformance = () => {
   })
 
   const t3 = performance.now()
+  const m3 = process.memoryUsage().rss
+  if (m3 > mPeak) {
+    mPeak = m3
+  }
 
   process.stdout.write("\n")
+
+  const MB = 1024 * 1024
 
   console.log(
     "\nRead: " +
@@ -176,7 +193,19 @@ const testPerformance = () => {
       " ms | Tokens: " +
       tokenCount +
       " | ms/token: " +
-      ((t3 - t2) / tokenCount).toFixed(0)
+      ((t3 - t2) / tokenCount).toFixed(0) +
+      "\n" +
+      "RAM baseline: " +
+      (m0 / MB).toFixed(0) +
+      " MB | RAM after read: " +
+      (m1 / MB).toFixed(0) +
+      " MB | RAM after load: " +
+      (m2 / MB).toFixed(0) +
+      " MB | RAM after generate: " +
+      (m3 / MB).toFixed(0) +
+      " MB | RAM peak: " +
+      (mPeak / MB).toFixed(0) +
+      " MB"
   )
 }
 
